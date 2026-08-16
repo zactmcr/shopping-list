@@ -103,56 +103,63 @@
     </div>
   </div>
 
-  <script>
-    // Change this key to any unique identifier for your list
-    const BUCKET_KEY = 'shopping_list_unique_7392';
-    const API_URL = `https://kvdb.io/bucket/${BUCKET_KEY}/items`;
+  // Replace with your generated bucket ID from Step 1
+const BUCKET_ID = 'PASTE_YOUR_GENERATED_BUCKET_ID_HERE';
+const KEY = 'shopping_list';
+const API_URL = `https://kvdb.io/${BUCKET_ID}/${KEY}`;
 
-    let state = {};
+let state = {};
 
-    async function fetchState() {
-      try {
-        const res = await fetch(API_URL);
-        if (res.ok) {
-          state = await res.json();
-          render();
-        }
-      } catch (err) {}
+async function fetchState() {
+  try {
+    const res = await fetch(API_URL);
+    if (res.ok) {
+      state = await res.json();
+      render();
     }
+  } catch (err) {
+    console.error("Fetch failed:", err);
+  }
+}
 
-    function render() {
-      document.querySelectorAll('.list-item').forEach(row => {
-        const id = row.dataset.id;
-        const isChecked = !!state[id];
-        row.querySelector('input[type="checkbox"]').checked = isChecked;
-        row.classList.toggle('checked', isChecked);
-      });
-    }
+function render() {
+  document.querySelectorAll('.list-item').forEach(row => {
+    const id = row.dataset.id;
+    const isChecked = Boolean(state[id]);
+    const cb = row.querySelector('input[type="checkbox"]');
+    if (cb) cb.checked = isChecked;
+    row.classList.toggle('checked', isChecked);
+  });
+}
 
-    function toggleItem(row) {
-      const cb = row.querySelector('input[type="checkbox"]');
-      cb.checked = !cb.checked;
-      syncState(cb);
-    }
+function toggleItem(row) {
+  const cb = row.querySelector('input[type="checkbox"]');
+  cb.checked = !cb.checked;
+  syncState(cb);
+}
 
-    async function syncState(checkbox) {
-      const row = checkbox.closest('.list-item');
-      const id = row.dataset.id;
-      
-      state[id] = checkbox.checked;
-      row.classList.toggle('checked', checkbox.checked);
+async function syncState(checkbox) {
+  const row = checkbox.closest('.list-item');
+  const id = row.dataset.id;
+  
+  state[id] = checkbox.checked;
+  row.classList.toggle('checked', checkbox.checked);
 
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify(state)
-        });
-      } catch (err) {}
-    }
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    });
+    if (!res.ok) console.error("Save failed with status:", res.status);
+  } catch (err) {
+    console.error("Save error:", err);
+  }
+}
 
-    // Initial load + poll every 3 seconds for updates from the other device
-    fetchState();
-    setInterval(fetchState, 3000);
-  </script>
+// Initial fetch + 3-second polling for live cross-device updates
+fetchState();
+setInterval(fetchState, 3000);
+
 </body>
 </html>
